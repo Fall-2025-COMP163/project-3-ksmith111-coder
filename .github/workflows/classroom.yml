@@ -1,0 +1,50 @@
+name: Autograding Tests
+'on':
+- push
+- repository_dispatch
+permissions:
+  checks: write
+  actions: read
+  contents: read
+jobs:
+  run-autograding-tests:
+    runs-on: ubuntu-latest
+    if: github.actor != 'github-classroom[bot]'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    - name: Module Structure Tests
+      id: module-structure-tests
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: Module Structure Tests
+        setup-command: pip install pytest
+        command: python -m pytest tests/test_module_structure.py -v
+        timeout: 10
+        max-score: 20
+    - name: Exception Handling Tests
+      id: exception-handling-tests
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: Exception Handling Tests
+        setup-command: pip install pytest
+        command: python -m pytest tests/test_exception_handling.py -v
+        timeout: 10
+        max-score: 20
+    - name: Game Integration Tests
+      id: game-integration-tests
+      uses: classroom-resources/autograding-command-grader@v1
+      with:
+        test-name: Game Integration Tests
+        setup-command: pip install pytest
+        command: python -m pytest tests/test_game_integration.py -v
+        timeout: 10
+        max-score: 20
+    - name: Autograding Reporter
+      uses: classroom-resources/autograding-grading-reporter@v1
+      env:
+        MODULE-STRUCTURE-TESTS_RESULTS: "${{steps.module-structure-tests.outputs.result}}"
+        EXCEPTION-HANDLING-TESTS_RESULTS: "${{steps.exception-handling-tests.outputs.result}}"
+        GAME-INTEGRATION-TESTS_RESULTS: "${{steps.game-integration-tests.outputs.result}}"
+      with:
+        runners: module-structure-tests,exception-handling-tests,game-integration-tests
