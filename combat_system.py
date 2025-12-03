@@ -421,5 +421,12 @@ if __name__ == "__main__":
     # try:
     #     result = battle.start_battle()
     #     print(f"Battle result: {result}")
+<<<<<<< HEAD
+=======
+    # except CharacterDeadError:
+    #     print("Character is dead!")
+    #     result = battle.start_battle()
+    #     print(f"Battle result: {result}")
+>>>>>>> effbbc7ea9df0b4db805e3ed41175a57fcc9c474
     # except CharacterDeadError:
     #     print("Character is dead!")

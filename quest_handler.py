@@ -488,5 +488,12 @@ if __name__ == "__main__":
     # try:
     #     accept_quest(test_char, 'first_quest', test_quests)
     #     print("Quest accepted!")
+<<<<<<< HEAD
+=======
+    # except QuestRequirementsNotMetError as e:
+    #     print(f"Cannot accept: {e}")
+    #     accept_quest(test_char, 'first_quest', test_quests)
+    #     print("Quest accepted!")
+>>>>>>> effbbc7ea9df0b4db805e3ed41175a57fcc9c474
     # except QuestRequirementsNotMetError as e:
     #     print(f"Cannot accept: {e}")

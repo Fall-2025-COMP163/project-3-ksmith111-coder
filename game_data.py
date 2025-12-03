@@ -20,7 +20,108 @@ from custom_exceptions import (
     InvalidSaveDataError,
     CharacterDeadError
 )
+<<<<<<< HEAD
 
+=======
+def validate_quest_data(quest_dict):
+    """
+    Validates that a quest dictionary has the required fields and correct types.
+    
+    Required keys:
+        - title (str)
+        - description (str)
+        - reward (str)
+    
+    Raises:
+        InvalidSaveDataError if any required field is missing or invalid.
+    """
+    required_keys = ["title", "description", "reward"]
+
+    for key in required_keys:
+        if key not in quest_dict:
+            raise InvalidSaveDataError(f"Missing required quest field: {key}")
+        if not isinstance(quest_dict[key], str):
+            raise InvalidSaveDataError(f"Quest field '{key}' must be a string")
+
+    return True
+def load_items(item_file="data/items.txt"):
+    """
+    Loads item data from a text file and returns a dictionary of items.
+    Format per line:
+        ITEM_ID: Name | Type | Effect | Cost
+    """
+    if not os.path.exists(item_file):
+        raise InvalidSaveDataError(f"Item file not found: {item_file}")
+
+    items = {}
+    with open(item_file, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            if ": " not in line or "|" not in line:
+                raise InvalidSaveDataError(f"Invalid item line: {line}")
+
+            item_id, rest = line.split(": ", 1)
+            parts = rest.split("|")
+            if len(parts) != 4:
+                raise InvalidSaveDataError(f"Item line missing fields: {line}")
+
+            items[item_id.strip()] = {
+                "NAME": parts[0].strip(),
+                "TYPE": parts[1].strip(),
+                "EFFECT": parts[2].strip(),
+                "COST": parts[3].strip()
+            }
+    return items
+def load_quests(quest_file="data/quests.txt"):
+    """
+    Loads quest data from a text file and returns a dictionary of quests.
+    
+    Expected format in quests.txt:
+        QUEST_ID: Title | Description | Reward
+    
+    Returns:
+        dict[str, dict] where each quest ID maps to its details.
+    
+    Raises:
+        InvalidSaveDataError if the file is missing or improperly formatted.
+    """
+    if not os.path.exists(quest_file):
+        raise InvalidSaveDataError(f"Quest file not found: {quest_file}")
+
+    quests = {}
+    try:
+        with open(quest_file, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+
+                # Each line should have QUEST_ID: Title | Description | Reward
+                if ": " not in line or "|" not in line:
+                    raise InvalidSaveDataError(f"Invalid quest line: {line}")
+
+                quest_id, rest = line.split(": ", 1)
+                parts = rest.split("|")
+                if len(parts) != 3:
+                    raise InvalidSaveDataError(f"Quest line missing fields: {line}")
+
+                title = parts[0].strip()
+                description = parts[1].strip()
+                reward = parts[2].strip()
+
+                quests[quest_id.strip()] = {
+                    "title": title,
+                    "description": description,
+                    "reward": reward
+                }
+
+    except Exception as e:
+        raise InvalidSaveDataError(f"Error loading quests: {e}")
+
+    return quests
+>>>>>>> effbbc7ea9df0b4db805e3ed41175a57fcc9c474
 # Base stats for the four required classes (Stored as a global constant dictionary)
 BASE_STATS_MAP = {
     "Warrior": {"health": 120, "strength": 15, "magic": 5},
@@ -517,6 +618,7 @@ def validate_character_data(character):
 
 if __name__ == "__main__":
     print("=== CHARACTER MANAGER MODULE TEST ===")
+<<<<<<< HEAD
     
     # Mock Item Data for Recalculation Test (needed by load_character and recalculate_stats)
     mock_item_data = {
@@ -554,3 +656,5 @@ if __name__ == "__main__":
         print(f"Load/Delete error: {e}")
         
     print("\n✅ Character Manager module complete.")
+=======
+>>>>>>> effbbc7ea9df0b4db805e3ed41175a57fcc9c474

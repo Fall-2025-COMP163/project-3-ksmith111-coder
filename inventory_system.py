@@ -510,4 +510,8 @@ if __name__ == "__main__":
     #     result = use_item(test_char, "health_potion", test_item)
     #     print(result)
     # except ItemNotFoundError:
+<<<<<<< HEAD
     #     print("Item not found")
+=======
+    #     print("Item not found")
+>>>>>>> effbbc7ea9df0b4db805e3ed41175a57fcc9c474
