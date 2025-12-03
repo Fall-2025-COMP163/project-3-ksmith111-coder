@@ -21,6 +21,53 @@ from custom_exceptions import (
     CharacterDeadError
 )
 
+def load_quests(quest_file="data/quests.txt"):
+    """
+    Loads quest data from a text file and returns a dictionary of quests.
+    
+    Expected format in quests.txt:
+        QUEST_ID: Title | Description | Reward
+    
+    Returns:
+        dict[str, dict] where each quest ID maps to its details.
+    
+    Raises:
+        InvalidSaveDataError if the file is missing or improperly formatted.
+    """
+    if not os.path.exists(quest_file):
+        raise InvalidSaveDataError(f"Quest file not found: {quest_file}")
+
+    quests = {}
+    try:
+        with open(quest_file, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+
+                # Each line should have QUEST_ID: Title | Description | Reward
+                if ": " not in line or "|" not in line:
+                    raise InvalidSaveDataError(f"Invalid quest line: {line}")
+
+                quest_id, rest = line.split(": ", 1)
+                parts = rest.split("|")
+                if len(parts) != 3:
+                    raise InvalidSaveDataError(f"Quest line missing fields: {line}")
+
+                title = parts[0].strip()
+                description = parts[1].strip()
+                reward = parts[2].strip()
+
+                quests[quest_id.strip()] = {
+                    "title": title,
+                    "description": description,
+                    "reward": reward
+                }
+
+    except Exception as e:
+        raise InvalidSaveDataError(f"Error loading quests: {e}")
+
+    return quests
 # Base stats for the four required classes (Stored as a global constant dictionary)
 BASE_STATS_MAP = {
     "Warrior": {"health": 120, "strength": 15, "magic": 5},
@@ -517,40 +564,3 @@ def validate_character_data(character):
 
 if __name__ == "__main__":
     print("=== CHARACTER MANAGER MODULE TEST ===")
-    
-    # Mock Item Data for Recalculation Test (needed by load_character and recalculate_stats)
-    mock_item_data = {
-        "W001": {'NAME': 'Iron Sword', 'TYPE': 'weapon', 'EFFECT': 'strength: 5', 'COST': '50'},
-        "A001": {'NAME': 'Leather Vest', 'TYPE': 'armor', 'EFFECT': 'defense: 2', 'COST': '30'},
-    }
-    
-    # --- Test 1: Creation and Stat Check (Rogue) ---
-    print("\n--- Test 1: Creation and Equipping ---")
-    char = create_character("TestRogue", "Rogue")
-    char['equipped_weapon'] = "W001"
-    char['equipped_armor'] = "A001"
-    
-    recalculate_stats(char, mock_item_data)
-    print(f"Initial STR: {BASE_STATS_MAP['Rogue']['strength']}, Equipped STR: {char['strength']} (Expected 17)")
-    print(f"Equipped DEF: {char['defense']} (Expected 2)")
-    
-    # --- Test 2: Saving and Loading ---
-    print("\n--- Test 2: Saving and Loading ---")
-    char['gold'] = 500
-    save_character(char)
-    print("Character saved successfully.")
-
-    try:
-        loaded = load_character("TestRogue", mock_item_data)
-        print(f"Loaded Level: {loaded['level']}")
-        print(f"Loaded Gold: {loaded['gold']}")
-        # Check if stats were correctly recalculated upon loading
-        print(f"Loaded Recalculated STR: {loaded['strength']} (Expected 17)") 
-        
-        # Clean up save file
-        os.remove(os.path.join("data/save_games", "TestRogue_save.txt"))
-        print("Save file cleaned up.")
-    except Exception as e:
-        print(f"Load/Delete error: {e}")
-        
-    print("\n✅ Character Manager module complete.")
