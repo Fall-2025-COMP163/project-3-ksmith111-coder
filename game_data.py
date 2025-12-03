@@ -20,7 +20,36 @@ from custom_exceptions import (
     InvalidSaveDataError,
     CharacterDeadError
 )
+def load_items(item_file="data/items.txt"):
+    """
+    Loads item data from a text file and returns a dictionary of items.
+    Format per line:
+        ITEM_ID: Name | Type | Effect | Cost
+    """
+    if not os.path.exists(item_file):
+        raise InvalidSaveDataError(f"Item file not found: {item_file}")
 
+    items = {}
+    with open(item_file, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line:
+                continue
+            if ": " not in line or "|" not in line:
+                raise InvalidSaveDataError(f"Invalid item line: {line}")
+
+            item_id, rest = line.split(": ", 1)
+            parts = rest.split("|")
+            if len(parts) != 4:
+                raise InvalidSaveDataError(f"Item line missing fields: {line}")
+
+            items[item_id.strip()] = {
+                "NAME": parts[0].strip(),
+                "TYPE": parts[1].strip(),
+                "EFFECT": parts[2].strip(),
+                "COST": parts[3].strip()
+            }
+    return items
 def load_quests(quest_file="data/quests.txt"):
     """
     Loads quest data from a text file and returns a dictionary of quests.
