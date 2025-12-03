@@ -14,66 +14,66 @@ AI Usage: I defined the base character structure, class names (Warrior, Mage, Ro
 
 import os
 from custom_exceptions import (
+    # These exceptions are character-specific, which is fine
     InvalidCharacterClassError,
     CharacterNotFoundError,
     SaveFileCorruptedError,
-    InvalidSaveDataError,
-    CharacterDeadError
+    CharacterDeadError,
+    
+    # FIX 1: Rename these to the standard data integrity exceptions expected by tests
+    MissingDataFileError, 
+    InvalidDataFormatError 
 )
-<<<<<<< HEAD
 
-=======
-def validate_quest_data(quest_dict):
-    """
-    Validates that a quest dictionary has the required fields and correct types.
-    
-    Required keys:
-        - title (str)
-        - description (str)
-        - reward (str)
-    
-    Raises:
-        InvalidSaveDataError if any required field is missing or invalid.
-    """
-    required_keys = ["title", "description", "reward"]
+# NOTE: The load_quests and load_items functions below should ideally be in game_data.py.
+# They are kept here temporarily for structural test compatibility.
 
-    for key in required_keys:
-        if key not in quest_dict:
-            raise InvalidSaveDataError(f"Missing required quest field: {key}")
-        if not isinstance(quest_dict[key], str):
-            raise InvalidSaveDataError(f"Quest field '{key}' must be a string")
-
-    return True
 def load_items(item_file="data/items.txt"):
     """
     Loads item data from a text file and returns a dictionary of items.
     Format per line:
         ITEM_ID: Name | Type | Effect | Cost
+    
+    Raises: MissingDataFileError, InvalidDataFormatError
     """
     if not os.path.exists(item_file):
-        raise InvalidSaveDataError(f"Item file not found: {item_file}")
+        # FIX 2: Use MissingDataFileError for file not found
+        raise MissingDataFileError(f"Item file not found: {item_file}")
 
     items = {}
-    with open(item_file, "r", encoding="utf-8") as f:
-        for line in f:
-            line = line.strip()
-            if not line:
-                continue
-            if ": " not in line or "|" not in line:
-                raise InvalidSaveDataError(f"Invalid item line: {line}")
+    try:
+        with open(item_file, "r", encoding="utf-8") as f:
+            for line_number, line in enumerate(f, 1):
+                line = line.strip()
+                if not line:
+                    continue
+                
+                # Manual Parsing Check
+                if ": " not in line or "|" not in line:
+                    # FIX 3: Use InvalidDataFormatError for data corruption
+                    raise InvalidDataFormatError(f"Invalid item line on line {line_number}: {line}")
 
-            item_id, rest = line.split(": ", 1)
-            parts = rest.split("|")
-            if len(parts) != 4:
-                raise InvalidSaveDataError(f"Item line missing fields: {line}")
+                item_id, rest = line.split(": ", 1)
+                parts = rest.split("|")
+                if len(parts) != 4:
+                    # FIX 4: Use InvalidDataFormatError for missing fields
+                    raise InvalidDataFormatError(f"Item line missing fields on line {line_number}: {line}")
 
-            items[item_id.strip()] = {
-                "NAME": parts[0].strip(),
-                "TYPE": parts[1].strip(),
-                "EFFECT": parts[2].strip(),
-                "COST": parts[3].strip()
-            }
+                items[item_id.strip()] = {
+                    "NAME": parts[0].strip(),
+                    "TYPE": parts[1].strip(),
+                    "EFFECT": parts[2].strip(),
+                    "COST": parts[3].strip() # COST should ideally be converted to int here
+                }
+    except InvalidDataFormatError:
+        raise
+    except Exception as e:
+         # FIX 5: Catch other IO errors as data format errors
+        raise InvalidDataFormatError(f"Error reading item data file: {e}")
+        
     return items
+
+
 def load_quests(quest_file="data/quests.txt"):
     """
     Loads quest data from a text file and returns a dictionary of quests.
@@ -85,27 +85,31 @@ def load_quests(quest_file="data/quests.txt"):
         dict[str, dict] where each quest ID maps to its details.
     
     Raises:
-        InvalidSaveDataError if the file is missing or improperly formatted.
+        MissingDataFileError if the file is missing.
+        InvalidDataFormatError if the data is improperly formatted.
     """
     if not os.path.exists(quest_file):
-        raise InvalidSaveDataError(f"Quest file not found: {quest_file}")
+        # FIX 6: Use MissingDataFileError for file not found
+        raise MissingDataFileError(f"Quest file not found: {quest_file}")
 
     quests = {}
     try:
         with open(quest_file, "r", encoding="utf-8") as f:
-            for line in f:
+            for line_number, line in enumerate(f, 1):
                 line = line.strip()
                 if not line:
                     continue
 
                 # Each line should have QUEST_ID: Title | Description | Reward
                 if ": " not in line or "|" not in line:
-                    raise InvalidSaveDataError(f"Invalid quest line: {line}")
+                    # FIX 7: Use InvalidDataFormatError for data corruption
+                    raise InvalidDataFormatError(f"Invalid quest line on line {line_number}: {line}")
 
                 quest_id, rest = line.split(": ", 1)
                 parts = rest.split("|")
                 if len(parts) != 3:
-                    raise InvalidSaveDataError(f"Quest line missing fields: {line}")
+                    # FIX 8: Use InvalidDataFormatError for missing fields
+                    raise InvalidDataFormatError(f"Quest line missing fields on line {line_number}: {line}")
 
                 title = parts[0].strip()
                 description = parts[1].strip()
@@ -117,11 +121,14 @@ def load_quests(quest_file="data/quests.txt"):
                     "reward": reward
                 }
 
+    except InvalidDataFormatError:
+        raise
     except Exception as e:
-        raise InvalidSaveDataError(f"Error loading quests: {e}")
+        # FIX 9: Catch other IO errors as data format errors
+        raise InvalidDataFormatError(f"Error loading quests: {e}")
 
     return quests
->>>>>>> effbbc7ea9df0b4db805e3ed41175a57fcc9c474
+
 # Base stats for the four required classes (Stored as a global constant dictionary)
 BASE_STATS_MAP = {
     "Warrior": {"health": 120, "strength": 15, "magic": 5},
@@ -194,7 +201,11 @@ def save_character(character, save_directory="data/save_games"):
 
     # Helper function to convert list fields into comma-separated strings for saving
     def list_to_str(key):
-        return ",".join(character.get(key, [])) or "NONE"
+        # FIX: Ensure it handles None/non-list types gracefully if character structure is incomplete
+        data_list = character.get(key)
+        if isinstance(data_list, list):
+             return ",".join(data_list) or "NONE"
+        return "NONE"
 
     # Get equipment IDs, using "NONE" if slot is empty
     equipped_weapon = character.get("equipped_weapon") or "NONE"
@@ -243,7 +254,7 @@ def load_character(character_name, item_data_dict, save_directory="data/save_gam
     """
     Loads a character from a save file and rebuilds the character dictionary.
     
-    Raises: CharacterNotFoundError, SaveFileCorruptedError, InvalidSaveDataError
+    Raises: CharacterNotFoundError, SaveFileCorruptedError, InvalidDataFormatError (renamed from InvalidSaveDataError)
     """
 
     filename = os.path.join(save_directory, f"{character_name}_save.txt")
@@ -263,7 +274,8 @@ def load_character(character_name, item_data_dict, save_directory="data/save_gam
                 
                 # Manual Parsing: checks for required separator
                 if ": " not in line:
-                    raise InvalidSaveDataError(f"Invalid line in save file for '{character_name}': missing ': ' separator.")
+                    # FIX 10: Use InvalidDataFormatError for structure issues
+                    raise InvalidDataFormatError(f"Invalid line in save file for '{character_name}': missing ': ' separator.")
                     
                 # Parsing the key and value
                 parts = line.split(": ", 1)
@@ -271,7 +283,7 @@ def load_character(character_name, item_data_dict, save_directory="data/save_gam
                 val = parts[1].strip()
                 data[key] = val
                 
-    except InvalidSaveDataError:
+    except InvalidDataFormatError:
         # Re-raise explicit parsing error
         raise
     except Exception as e:
@@ -292,8 +304,9 @@ def load_character(character_name, item_data_dict, save_directory="data/save_gam
     while i < len(required_keys):
         key = required_keys[i]
         if key not in data:
-             # If a core stat is missing, raise an error
-             raise InvalidSaveDataError(f"Critical field missing from save file: {key}")
+              # If a core stat is missing, raise an error
+              # FIX 11: Use InvalidDataFormatError for missing critical fields
+              raise InvalidDataFormatError(f"Critical field missing from save file: {key}")
         i += 1
 
 
@@ -335,7 +348,8 @@ def load_character(character_name, item_data_dict, save_directory="data/save_gam
         
     except ValueError as e:
         # Raised if int() conversion fails (invalid numeric data)
-        raise InvalidSaveDataError(f"Invalid numeric value found in save file: {e}")
+        # FIX 12: Use InvalidDataFormatError for invalid numeric values
+        raise InvalidDataFormatError(f"Invalid numeric value found in save file: {e}")
 
     # Final structure and type validation
     validate_character_data(character)
@@ -365,13 +379,13 @@ def list_saved_characters(save_directory="data/save_games"):
         if fn.endswith("_save.txt"):
             # Manually strip the suffix to get the name
             if len(fn) > 9:
-                 names.append(fn[:-9]) 
+                names.append(fn[:-9]) 
         i += 1
     return names
 
 
 # ============================================================================
-# CHARACTER OPERATIONS
+# CHARACTER OPERATIONS (Stat and Health Management)
 # ============================================================================
 
 def gain_experience(character, xp_amount):
@@ -390,8 +404,10 @@ def gain_experience(character, xp_amount):
         current_level = character["level"]
         needed = current_level * 100 # XP required to level up
 
-        if character["experience"] >= needed:
-            character["experience"] -= needed
+        if character["experience"] + xp_amount >= needed:
+            # XP remaining after level-up goes into the next level progression
+            remaining_xp = (character["experience"] + xp_amount) - needed
+            
             character["level"] += 1
 
             # Increase BASE stats upon leveling
@@ -400,7 +416,11 @@ def gain_experience(character, xp_amount):
             character["base_magic"] += 2
 
             leveled = True
+            xp_amount = remaining_xp # Continue loop with remaining XP
+            character["experience"] = 0 # Reset current level XP to 0 for next loop start
         else:
+             # Add remaining XP and break
+            character["experience"] += xp_amount
             break
             
     # When a level up occurs, the new base stats are set.
@@ -583,7 +603,7 @@ def validate_character_data(character):
     while i < len(required):
         key = required[i]
         if key not in character:
-            raise InvalidSaveDataError(f"Missing required field: {key}")
+            raise InvalidDataFormatError(f"Missing required field: {key}") # FIX: Use InvalidDataFormatError
         i += 1
 
     # Check numeric fields
@@ -597,7 +617,7 @@ def validate_character_data(character):
                 # Attempt to convert to integer
                 character[n] = int(character[n])
             except Exception:
-                raise InvalidSaveDataError(f"Field {n} must be an integer or convertible string")
+                raise InvalidDataFormatError(f"Field {n} must be an integer or convertible string") # FIX: Use InvalidDataFormatError
         i += 1
 
     # Check list fields
@@ -606,25 +626,28 @@ def validate_character_data(character):
     while i < len(lists):
         l = lists[i]
         if not isinstance(character[l], list):
-            raise InvalidSaveDataError(f"Field {l} must be a list")
+            raise InvalidDataFormatError(f"Field {l} must be a list") # FIX: Use InvalidDataFormatError
         i += 1
 
     return True
 
 
 # ============================================================================
-# TESTING
+# TESTING (Note: This is outside the function definitions and only runs if the script is executed directly)
 # ============================================================================
 
 if __name__ == "__main__":
     print("=== CHARACTER MANAGER MODULE TEST ===")
-<<<<<<< HEAD
     
     # Mock Item Data for Recalculation Test (needed by load_character and recalculate_stats)
     mock_item_data = {
         "W001": {'NAME': 'Iron Sword', 'TYPE': 'weapon', 'EFFECT': 'strength: 5', 'COST': '50'},
         "A001": {'NAME': 'Leather Vest', 'TYPE': 'armor', 'EFFECT': 'defense: 2', 'COST': '30'},
     }
+    
+    # Create necessary save directory for testing
+    if not os.path.exists("data/save_games"):
+        os.makedirs("data/save_games")
     
     # --- Test 1: Creation and Stat Check (Rogue) ---
     print("\n--- Test 1: Creation and Equipping ---")
@@ -656,5 +679,3 @@ if __name__ == "__main__":
         print(f"Load/Delete error: {e}")
         
     print("\n✅ Character Manager module complete.")
-=======
->>>>>>> effbbc7ea9df0b4db805e3ed41175a57fcc9c474
