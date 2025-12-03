@@ -20,6 +20,27 @@ from custom_exceptions import (
     InvalidSaveDataError,
     CharacterDeadError
 )
+def validate_quest_data(quest_dict):
+    """
+    Validates that a quest dictionary has the required fields and correct types.
+    
+    Required keys:
+        - title (str)
+        - description (str)
+        - reward (str)
+    
+    Raises:
+        InvalidSaveDataError if any required field is missing or invalid.
+    """
+    required_keys = ["title", "description", "reward"]
+
+    for key in required_keys:
+        if key not in quest_dict:
+            raise InvalidSaveDataError(f"Missing required quest field: {key}")
+        if not isinstance(quest_dict[key], str):
+            raise InvalidSaveDataError(f"Quest field '{key}' must be a string")
+
+    return True
 def load_items(item_file="data/items.txt"):
     """
     Loads item data from a text file and returns a dictionary of items.
